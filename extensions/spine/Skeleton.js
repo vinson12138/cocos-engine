@@ -544,7 +544,12 @@ sp.Skeleton = cc.Class({
             if (this.debugBones || this.debugSlots) {
                 cc.warn("Debug bones or slots is invalid in cached mode");
             }
-            let skeletonInfo = this._skeletonCache.getSkeletonCache(this.skeletonData._uuid, skeletonData);
+
+            //wangcheng
+            let cacheKey = this.getCacheKey();
+            let skeletonInfo = this._skeletonCache.getSkeletonCache(cacheKey, skeletonData);
+            // let skeletonInfo = this._skeletonCache.getSkeletonCache(skeletonData._uuid, skeletonData);
+
             this._skeleton = skeletonInfo.skeleton;
             this._clipper = skeletonInfo.clipper;
             this._rootBone = this._skeleton.getRootBone();
@@ -555,6 +560,20 @@ sp.Skeleton = cc.Class({
         }
 
         this.markForRender(true);
+    },
+
+    //wangcheng
+    getCacheKey() {
+        if (this._cacheMode === AnimationCacheMode.SHARED_CACHE) {
+            let skin;
+            if (this._skeleton && this._skeleton.skin) skin = this._skeleton.skin.name;
+            else skin = this.defaultSkin;
+
+            return this.skeletonData._uuid + "_" + skin;
+
+        } else if (this._cacheMode === AnimationCacheMode.PRIVATE_CACHE) {
+            return this.skeletonData._uuid;
+        }
     },
 
     /**
@@ -834,7 +853,11 @@ sp.Skeleton = cc.Class({
      */
     updateAnimationCache(animName) {
         if (!this.isAnimationCached()) return;
-        let uuid = this.skeletonData._uuid;
+
+        //wangcheng
+        // let uuid = this.skeletonData._uuid;
+        let uuid = this.getCacheKey();
+
         if (this._skeletonCache) {
             this._skeletonCache.updateAnimationCache(uuid, animName);
         }
@@ -849,8 +872,13 @@ sp.Skeleton = cc.Class({
      */
     invalidAnimationCache() {
         if (!this.isAnimationCached()) return;
+
+        //wangcheng
+        let uuid = this.getCacheKey();
+        // let uuid = this.skeletonData._uuid;
+
         if (this._skeletonCache) {
-            this._skeletonCache.invalidAnimationCache(this.skeletonData._uuid);
+            this._skeletonCache.invalidAnimationCache(uuid);
         }
     },
 
@@ -910,6 +938,19 @@ sp.Skeleton = cc.Class({
      */
     setSkin(skinName) {
         if (this._skeleton) {
+            let skin = this._skeleton.skin;
+
+            //wangcheng
+            if (this._cacheMode == AnimationCacheMode.SHARED_CACHE) {
+                if ((skin && skin.name != skinName) || (!skin && skinName != this.defaultSkin)) {
+
+                    let skeletonInfo = this._skeletonCache.getSkeletonCache(this.skeletonData._uuid + '_' + skinName, this._skeleton.data);
+                    this._skeleton = skeletonInfo.skeleton;
+                    this._clipper = skeletonInfo.clipper;
+                    this._rootBone = this._skeleton.getRootBone();
+                }
+            }
+
             this._skeleton.setSkinByName(skinName);
             this._skeleton.setSlotsToSetupPose();
         }
@@ -1003,9 +1044,14 @@ sp.Skeleton = cc.Class({
                 cc.warn("Track index can not greater than 0 in cached mode.");
             }
             if (!this._skeletonCache) return null;
-            let cache = this._skeletonCache.getAnimationCache(this.skeletonData._uuid, name);
+
+            //wangcheng
+            let uuid = this.getCacheKey();
+            // let uuid = this.skeletonData._uuid;
+
+            let cache = this._skeletonCache.getAnimationCache(uuid, name);
             if (!cache) {
-                cache = this._skeletonCache.initAnimationCache(this.skeletonData._uuid, name);
+                cache = this._skeletonCache.initAnimationCache(uuid, name);
             }
             if (cache) {
                 this._isAniComplete = false;

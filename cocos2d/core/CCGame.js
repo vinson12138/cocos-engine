@@ -233,9 +233,9 @@ var game = {
      */
     onStart: null,
 
-//@Public Methods
+    //@Public Methods
 
-//  @Game play control
+    //  @Game play control
     /**
      * !#en Set frame rate of game.
      * !#zh 设置游戏帧率。
@@ -359,9 +359,9 @@ var game = {
         close();
     },
 
-//  @Game loading
+    //  @Game loading
 
-    _initEngine () {
+    _initEngine() {
         if (this._rendererInitialized) {
             return;
         }
@@ -375,7 +375,7 @@ var game = {
         this.emit(this.EVENT_ENGINE_INITED);
     },
 
-    _loadPreviewScript (cb) {
+    _loadPreviewScript(cb) {
         if (CC_PREVIEW && window.__quick_compile_project__) {
             window.__quick_compile_project__.load(cb);
         }
@@ -384,13 +384,13 @@ var game = {
         }
     },
 
-    _prepareFinished (cb) {
+    _prepareFinished(cb) {
         // Init engine
         this._initEngine();
         this._setAnimFrame();
         cc.assetManager.builtins.init(() => {
             // Log engine version
-            console.log('Cocos Creator v' + cc.ENGINE_VERSION);
+            console.log('Cocos Creator v' + cc.ENGINE_VERSION + ' fix 1');
             this._prepared = true;
             this._runMainLoop();
 
@@ -424,7 +424,7 @@ var game = {
      * @typescript
      * on<T extends Function>(type: string, callback: T, target?: any, useCapture?: boolean): T
      */
-    on (type, callback, target, once) {
+    on(type, callback, target, once) {
         // Make sure EVENT_ENGINE_INITED and EVENT_GAME_INITED callbacks to be invoked
         if ((this._prepared && type === this.EVENT_ENGINE_INITED) ||
             (!this._paused && type === this.EVENT_GAME_INITED)) {
@@ -452,7 +452,7 @@ var game = {
      * @param {any} [callback.arg5] arg5
      * @param {Object} [target] - The target (this object) to invoke the callback, can be null
      */
-    once (type, callback, target) {
+    once(type, callback, target) {
         // Make sure EVENT_ENGINE_INITED and EVENT_GAME_INITED callbacks to be invoked
         if ((this._prepared && type === this.EVENT_ENGINE_INITED) ||
             (!this._paused && type === this.EVENT_GAME_INITED)) {
@@ -469,7 +469,7 @@ var game = {
      * @param {Function} cb
      * @method prepare
      */
-    prepare (cb) {
+    prepare(cb) {
         // Already prepared
         if (this._prepared) {
             if (cb) cb();
@@ -494,7 +494,7 @@ var game = {
         this.prepare(game.onStart && game.onStart.bind(game));
     },
 
-//  @ Persist root node section
+    //  @ Persist root node section
     /**
      * !#en
      * Add a persistent root node to the game, the persistent node won't be destroyed during scene transition.<br/>
@@ -517,7 +517,7 @@ var game = {
                 if (!node.parent) {
                     node.parent = scene;
                 }
-                else if ( !(node.parent instanceof cc.Scene) ) {
+                else if (!(node.parent instanceof cc.Scene)) {
                     cc.warnID(3801);
                     return;
                 }
@@ -558,9 +558,9 @@ var game = {
         return node._persistNode;
     },
 
-//@Private Methods
+    //@Private Methods
 
-//  @Time ticker section
+    //  @Time ticker section
     _setAnimFrame: function () {
         this._lastTime = performance.now();
         var frameRate = game.config.frameRate;
@@ -573,10 +573,10 @@ var game = {
         }
         else {
             let rAF = window.requestAnimationFrame = window.requestAnimationFrame ||
-            window.webkitRequestAnimationFrame ||
-            window.mozRequestAnimationFrame ||
-            window.oRequestAnimationFrame ||
-            window.msRequestAnimationFrame;
+                window.webkitRequestAnimationFrame ||
+                window.mozRequestAnimationFrame ||
+                window.oRequestAnimationFrame ||
+                window.msRequestAnimationFrame;
 
             if (frameRate !== 60 && frameRate !== 30) {
                 window.requestAnimFrame = rAF ? this._stTimeWithRAF : this._stTime;
@@ -586,39 +586,39 @@ var game = {
                 window.requestAnimFrame = rAF || this._stTime;
 
                 window.cancelAnimFrame = window.cancelAnimationFrame ||
-                window.cancelRequestAnimationFrame ||
-                window.msCancelRequestAnimationFrame ||
-                window.mozCancelRequestAnimationFrame ||
-                window.oCancelRequestAnimationFrame ||
-                window.webkitCancelRequestAnimationFrame ||
-                window.msCancelAnimationFrame ||
-                window.mozCancelAnimationFrame ||
-                window.webkitCancelAnimationFrame ||
-                window.oCancelAnimationFrame ||
-                this._ctTime;
+                    window.cancelRequestAnimationFrame ||
+                    window.msCancelRequestAnimationFrame ||
+                    window.mozCancelRequestAnimationFrame ||
+                    window.oCancelRequestAnimationFrame ||
+                    window.webkitCancelRequestAnimationFrame ||
+                    window.msCancelAnimationFrame ||
+                    window.mozCancelAnimationFrame ||
+                    window.webkitCancelAnimationFrame ||
+                    window.oCancelAnimationFrame ||
+                    this._ctTime;
             }
         }
     },
 
-    _stTimeWithRAF: function(callback){
+    _stTimeWithRAF: function (callback) {
         var currTime = performance.now();
         var timeToCall = Math.max(0, game._frameTime - (currTime - game._lastTime));
-        var id = window.setTimeout(function() {
-                window.requestAnimationFrame(callback);
-            }, timeToCall);
+        var id = window.setTimeout(function () {
+            window.requestAnimationFrame(callback);
+        }, timeToCall);
         game._lastTime = currTime + timeToCall;
         return id;
     },
 
-    _stTime: function(callback){
+    _stTime: function (callback) {
         var currTime = performance.now();
         var timeToCall = Math.max(0, game._frameTime - (currTime - game._lastTime));
-        var id = window.setTimeout(function() { callback(); },
+        var id = window.setTimeout(function () { callback(); },
             timeToCall);
         game._lastTime = currTime + timeToCall;
         return id;
     },
-    _ctTime: function(id){
+    _ctTime: function (id) {
         window.clearTimeout(id);
     },
     //Run game.
@@ -650,8 +650,8 @@ var game = {
         self._paused = false;
     },
 
-//  @Game loading section
-    _initConfig (config) {
+    //  @Game loading section
+    _initConfig(config) {
         // Configs adjustment
         if (typeof config.debugMode !== 'number') {
             config.debugMode = 0;
@@ -684,7 +684,7 @@ var game = {
         this._configLoaded = true;
     },
 
-    _determineRenderType () {
+    _determineRenderType() {
         let config = this.config,
             userRenderMode = parseInt(config.renderMode) || 0;
 
@@ -716,7 +716,7 @@ var game = {
         }
     },
 
-    _initRenderer () {
+    _initRenderer() {
         // Avoid setup to be called twice.
         if (this._rendererInitialized) return;
 
@@ -757,7 +757,7 @@ var game = {
             localContainer.appendChild(localCanvas);
             this.frame = (localContainer.parentNode === document.body) ? document.documentElement : localContainer.parentNode;
 
-            function addClass (element, name) {
+            function addClass(element, name) {
                 var hasClass = (' ' + element.className + ' ').indexOf(' ' + name + ' ') > -1;
                 if (!hasClass) {
                     if (element.className) {
@@ -822,14 +822,14 @@ var game = {
 
         var hidden = false;
 
-        function onHidden () {
+        function onHidden() {
             if (!hidden) {
                 hidden = true;
                 game.emit(game.EVENT_HIDE);
             }
         }
         // In order to adapt the most of platforms the onshow API.
-        function onShown (arg0, arg1, arg2, arg3, arg4) {
+        function onShown(arg0, arg1, arg2, arg3, arg4) {
             if (hidden) {
                 hidden = false;
                 game.emit(game.EVENT_SHOW, arg0, arg1, arg2, arg3, arg4);
