@@ -390,7 +390,7 @@ var game = {
         this._setAnimFrame();
         cc.assetManager.builtins.init(() => {
             // Log engine version
-            console.log('Cocos Creator v' + cc.ENGINE_VERSION + ' fix 1');
+            console.log('Cocos Creator v' + cc.ENGINE_VERSION);
             this._prepared = true;
             this._runMainLoop();
 

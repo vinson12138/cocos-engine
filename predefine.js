@@ -115,7 +115,7 @@ var _global = typeof window === 'undefined' ? global : window;
 /*
  * @param defaultValue - The default value is only used in the editor or preview.
  */
-function defineMacro (name, defaultValue) {
+function defineMacro(name, defaultValue) {
     // if "global_defs" not preprocessed by uglify, just declare them globally,
     // this may happened in release version's preview page.
     if (typeof _global[name] === 'undefined') {
@@ -123,7 +123,7 @@ function defineMacro (name, defaultValue) {
     }
 }
 
-function defineDeprecatedMacroGetter (name, defaultValue) {
+function defineDeprecatedMacroGetter(name, defaultValue) {
     if (typeof _global[name] === 'undefined') {
         Object.defineProperty(_global, name, {
             get: function () {
@@ -132,7 +132,7 @@ function defineDeprecatedMacroGetter (name, defaultValue) {
                     recommandedUsage = 'cc.sys.platform === cc.sys.WECHAT_GAME_SUB';
                 }
                 else if (name === 'CC_WECHATGAME') {
-                    recommandedUsage = 'cc.sys.platform === cc.sys.WECHAT_GAME';                    
+                    recommandedUsage = 'cc.sys.platform === cc.sys.WECHAT_GAME';
                 }
                 else if (name === 'CC_QQPLAY') {
                     recommandedUsage = 'cc.sys.platform === cc.sys.QQ_PLAY';
@@ -144,7 +144,7 @@ function defineDeprecatedMacroGetter (name, defaultValue) {
     }
 }
 
-function defined (name) {
+function defined(name) {
     return typeof _global[name] === 'object';
 }
 
@@ -211,5 +211,5 @@ if (CC_DEV) {
  * If you post a bug to forum, please attach this flag.
  * @property {String} ENGINE_VERSION
  */
-const engineVersion = '2.4.5';
+const engineVersion = '2.4.5 (fix 1)';
 _global['CocosEngine'] = cc.ENGINE_VERSION = engineVersion;
