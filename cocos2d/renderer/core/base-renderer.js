@@ -63,7 +63,7 @@ export default class Base {
    * @param {gfx.Texture2D} opts.defaultTexture
    * @param {gfx.TextureCube} opts.defaultTextureCube
    */
-  constructor (device, opts) {
+  constructor(device, opts) {
     this._device = device;
     this._programLib = new ProgramLib(device);
     this._opts = opts;
@@ -118,11 +118,11 @@ export default class Base {
     this._definesChanged = false;
   }
 
-  _resetTextuerUnit () {
+  _resetTextuerUnit() {
     this._usedTextureUnits = 0;
   }
 
-  _allocTextureUnit () {
+  _allocTextureUnit() {
     const device = this._device;
 
     let unit = this._usedTextureUnits;
@@ -134,27 +134,27 @@ export default class Base {
     return unit;
   }
 
-  _registerStage (name, fn) {
+  _registerStage(name, fn) {
     this._stage2fn[name] = fn;
   }
 
-  clear () {
+  clear() {
     this._programLib.clear();
     this.reset();
   }
 
-  reset () {
+  reset() {
     this._viewPools.reset();
     this._stageItemsPools.reset();
 
     this._definesChanged = false;
   }
 
-  _requestView () {
+  _requestView() {
     return this._viewPools.add();
   }
 
-  _render (view, scene) {
+  _render(view, scene) {
     const device = this._device;
 
     // setup framebuffer
@@ -184,8 +184,9 @@ export default class Base {
     // get all draw items
     this._drawItemsPools.reset();
 
-    for (let i = 0; i < scene._models.length; ++i) {
-      let model = scene._models.data[i];
+    const models = scene._models.data;
+    for (let i = 0, len = scene._models.length; i < len; ++i) {
+      let model = models[i];
 
       // filter model by view
       if ((model._cullingMask & view._cullingMask) === 0) {
@@ -199,13 +200,15 @@ export default class Base {
     // dispatch draw items to different stage
     _stageInfos.reset();
 
-    for (let i = 0; i < view._stages.length; ++i) {
-      let stage = view._stages[i];
+    const stages = view._stages;
+    const drawItemsPools = this._drawItemsPools;
+    for (let i = 0, len = stages.length; i < len; ++i) {
+      let stage = stages[i];
       let stageItems = this._stageItemsPools.add();
       stageItems.reset();
 
-      for (let j = 0; j < this._drawItemsPools.length; ++j) {
-        let drawItem = this._drawItemsPools.data[j];
+      for (let j = 0, len2 = drawItemsPools.length; j < len2; ++j) {
+        let drawItem = drawItemsPools.data[j];
         let passes = drawItem.effect.stagePasses[stage];
         if (!passes || passes.length === 0) continue;
 
@@ -226,14 +229,14 @@ export default class Base {
     }
 
     // render stages
-    for (let i = 0; i < _stageInfos.length; ++i) {
+    for (let i = 0, len = _stageInfos.length; i < len; ++i) {
       let info = _stageInfos.data[i];
       let fn = this._stage2fn[info.stage];
       fn(view, info.items);
     }
   }
 
-  _setProperty (prop) {
+  _setProperty(prop) {
     const device = this._device;
     let param = prop.value;
 
@@ -277,7 +280,7 @@ export default class Base {
     }
   }
 
-  _draw (item) {
+  _draw(item) {
     const device = this._device;
     const programLib = this._programLib;
     const { node, ia, passes, effect } = item;
@@ -309,9 +312,8 @@ export default class Base {
     // }
 
     let defines = this._defines;
-
     // for each pass
-    for (let i = 0; i < passes.length; ++i) {
+    for (let i = 0, len = passes.length; i < len; ++i) {
       let pass = passes[i];
 
       if (this._definesChanged) {
@@ -341,10 +343,10 @@ export default class Base {
 
       let uniforms = program._uniforms;
       let variants = pass._properties;
-      for (let j = 0; j < uniforms.length; j++) {
+      for (let j = 0, len2 = uniforms.length; j < len2; j++) {
         let prop = variants[uniforms[j].name];
         if (prop !== undefined)
-        this._setProperty(prop);
+          this._setProperty(prop);
       }
 
 
