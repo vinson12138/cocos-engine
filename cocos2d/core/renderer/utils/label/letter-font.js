@@ -60,11 +60,11 @@ function LetterTexture(char, labelInfo) {
 LetterTexture.prototype = {
     constructor: LetterTexture,
 
-    updateRenderData () {
+    updateRenderData() {
         this._updateProperties();
         this._updateTexture();
     },
-    _updateProperties () {
+    _updateProperties() {
         this._texture = new cc.Texture2D();
         this._data = Label._canvasPool.get();
         this._canvas = this._data.canvas;
@@ -86,7 +86,7 @@ LetterTexture.prototype = {
 
         this._texture.initWithElement(this._canvas);
     },
-    _updateTexture () {
+    _updateTexture() {
         let context = this._context;
         let labelInfo = this._labelInfo,
             width = this._canvas.width,
@@ -94,7 +94,7 @@ LetterTexture.prototype = {
 
         const fontSize = this._labelInfo.fontSize;
         let startX = width / 2;
-        let startY = height / 2 +  fontSize * textUtils.MIDDLE_RATIO + fontSize * textUtils.BASELINE_OFFSET;
+        let startY = height / 2 + fontSize * textUtils.MIDDLE_RATIO + fontSize * textUtils.BASELINE_OFFSET;
         let color = labelInfo.color;
 
         // use round for line join to avoid sharp intersect point
@@ -118,20 +118,20 @@ LetterTexture.prototype = {
         this._texture.handleLoadedTexture();
     },
 
-    destroy () {
+    destroy() {
         this._texture.destroy();
         this._texture = null;
         Label._canvasPool.put(this._data);
     },
 }
 
-function LetterAtlas (width, height) {
+function LetterAtlas(width, height) {
     let texture = new RenderTexture();
     texture.initWithSize(width, height);
     texture.update();
 
     this._fontDefDictionary = new FontAtlas(texture);
-    
+
     this._x = space;
     this._y = space;
     this._nexty = space;
@@ -143,9 +143,9 @@ function LetterAtlas (width, height) {
 }
 
 cc.js.mixin(LetterAtlas.prototype, {
-    insertLetterTexture (letterTexture) {
+    insertLetterTexture(letterTexture) {
         let texture = letterTexture._texture;
-        let width = texture.width, height = texture.height;        
+        let width = texture.width, height = texture.height;
 
         if ((this._x + width + space) > this._width) {
             this._x = space;
@@ -163,10 +163,10 @@ cc.js.mixin(LetterAtlas.prototype, {
         this._fontDefDictionary._texture.drawTextureAt(texture, this._x, this._y);
 
         this._dirty = true;
-        
+
         let letter = new FontLetterDefinition();
-        letter.u = this._x + bleed/2;
-        letter.v = this._y + bleed/2;
+        letter.u = this._x + bleed / 2;
+        letter.v = this._y + bleed / 2;
         letter.texture = this._fontDefDictionary._texture;
         letter.valid = true;
         letter.w = letterTexture._width - bleed;
@@ -177,17 +177,17 @@ cc.js.mixin(LetterAtlas.prototype, {
         this._x += width + space;
 
         this._fontDefDictionary.addLetterDefinitions(letterTexture._hash, letter);
-        
+
         return letter
     },
 
-    update () {
+    update() {
         if (!this._dirty) return;
         this._fontDefDictionary._texture.update();
         this._dirty = false;
     },
 
-    reset () {
+    reset() {
         this._x = space;
         this._y = space;
         this._nexty = space;
@@ -204,35 +204,35 @@ cc.js.mixin(LetterAtlas.prototype, {
         this._fontDefDictionary.clear();
     },
 
-    destroy () {
+    destroy() {
         this.reset();
         this._fontDefDictionary._texture.destroy();
         this._fontDefDictionary._texture = null;
     },
 
-    beforeSceneLoad () {
+    beforeSceneLoad() {
         this.clearAllCache();
     },
 
-    clearAllCache () {
+    clearAllCache() {
         this.destroy();
 
         let texture = new RenderTexture();
         texture.initWithSize(this._width, this._height);
         texture.update();
-        
+
         this._fontDefDictionary._texture = texture;
     },
 
-    getLetter (key) {
+    getLetter(key) {
         return this._fontDefDictionary._letterDefinitions[key];
     },
 
-    getTexture () {
+    getTexture() {
         return this._fontDefDictionary.getTexture();
     },
 
-    getLetterDefinitionForChar: function(char, labelInfo) {
+    getLetterDefinitionForChar: function (char, labelInfo) {
         let hash = char.charCodeAt(0) + labelInfo.hash;
         let letter = this._fontDefDictionary._letterDefinitions[hash];
         if (!letter) {
@@ -246,14 +246,14 @@ cc.js.mixin(LetterAtlas.prototype, {
     }
 });
 
-function computeHash (labelInfo) {
+function computeHash(labelInfo) {
     let hashData = '';
     let color = labelInfo.color.toHEX();
     let out = '';
     if (labelInfo.isOutlined && labelInfo.margin > 0) {
         out = out + labelInfo.margin + labelInfo.out.toHEX();
     }
-    
+
     return hashData + labelInfo.fontSize + labelInfo.fontFamily + color + out;
 }
 
@@ -264,16 +264,16 @@ let _atlasHeight = 2048;
 let _isBold = false;
 
 export default class LetterFontAssembler extends WebglBmfontAssembler {
-    _getAssemblerData () {
+    _getAssemblerData() {
         if (!_shareAtlas) {
             _shareAtlas = new LetterAtlas(_atlasWidth, _atlasHeight);
             cc.Label._shareAtlas = _shareAtlas;
         }
-        
+
         return _shareAtlas.getTexture();
     }
 
-    _updateFontFamily (comp) {
+    _updateFontFamily(comp) {
         shareLabelInfo.fontAtlas = _shareAtlas;
         shareLabelInfo.fontFamily = getFontFamily(comp);
 
@@ -291,13 +291,13 @@ export default class LetterFontAssembler extends WebglBmfontAssembler {
         }
     }
 
-    _updateLabelInfo (comp) {
+    _updateLabelInfo(comp) {
         shareLabelInfo.fontDesc = this._getFontDesc();
         shareLabelInfo.color = comp.node.color;
         shareLabelInfo.hash = computeHash(shareLabelInfo);
     }
 
-    _getFontDesc () {
+    _getFontDesc() {
         let fontDesc = shareLabelInfo.fontSize.toString() + 'px ';
         fontDesc = fontDesc + shareLabelInfo.fontFamily;
         if (_isBold) {
@@ -306,8 +306,8 @@ export default class LetterFontAssembler extends WebglBmfontAssembler {
 
         return fontDesc;
     }
-    _computeHorizontalKerningForText () {}
-    _determineRect (tempRect) {
+    _computeHorizontalKerningForText() { }
+    _determineRect(tempRect) {
         return false;
     }
 }
