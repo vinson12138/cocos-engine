@@ -32,6 +32,9 @@ const Overflow = Label.Overflow;
 
 const shareLabelInfo = require('../utils').shareLabelInfo;
 
+
+const emojiRegex = /[\uD800-\uDBFF][\uDC00-\uDFFF]/g;
+
 let LetterInfo = function () {
     this.char = '';
     this.valid = true;
@@ -201,8 +204,11 @@ export default class BmfontAssembler extends Assembler2D {
         let letterDef = null;
         let letterPosition = cc.v2(0, 0);
 
+        let emojisMap = {};
+        _string.replace(emojiRegex, (match, index) => emojisMap[index] = match);
+
         for (let index = 0; index < textLen;) {
-            let character = _string.charAt(index);
+            let character = emojisMap[index] || _string.charAt(index);
             if (character === "\n") {
                 _linesWidth.push(letterRight);
                 letterRight = 0;
@@ -214,7 +220,7 @@ export default class BmfontAssembler extends Assembler2D {
                 continue;
             }
 
-            let tokenLen = nextTokenFunc(_string, index, textLen);
+            let tokenLen = nextTokenFunc(_string, index, textLen, !!emojisMap[index]);
             let tokenHighestY = highestY;
             let tokenLowestY = lowestY;
             let tokenRight = letterRight;
@@ -223,7 +229,7 @@ export default class BmfontAssembler extends Assembler2D {
 
             for (let tmp = 0; tmp < tokenLen; ++tmp) {
                 let letterIndex = index + tmp;
-                character = _string.charAt(letterIndex);
+                character = emojisMap[letterIndex] || _string.charAt(letterIndex);
                 if (character === "\r") {
                     this._recordPlaceholderInfo(letterIndex, character);
                     continue;
@@ -291,7 +297,14 @@ export default class BmfontAssembler extends Assembler2D {
                 longestLine = letterRight;
             }
 
-            index += tokenLen;
+            if (emojisMap[index]) {
+                let v = _lettersInfo[index + 1];
+                if (v) v.valid = false;
+                index += 2;
+            }
+            else {
+                index += tokenLen;
+            }
         } //end of for loop
 
         _linesWidth.push(letterRight);
@@ -335,7 +348,9 @@ export default class BmfontAssembler extends Assembler2D {
         return _overflow === Overflow.SHRINK ? _bmfontScale : 1;
     }
 
-    _getFirstWordLen(text, startIndex, textLen) {
+    _getFirstWordLen(text, startIndex, textLen, isEmoji) {
+        if (isEmoji) return 1;
+
         let character = text.charAt(startIndex);
         if (textUtils.isUnicodeCJK(character)
             || character === "\n"
@@ -391,7 +406,7 @@ export default class BmfontAssembler extends Assembler2D {
         }
 
         _lettersInfo[letterIndex].char = char;
-        _lettersInfo[letterIndex].hash = char.charCodeAt(0) + shareLabelInfo.hash;
+        _lettersInfo[letterIndex].hash = char.codePointAt() + shareLabelInfo.hash;
         _lettersInfo[letterIndex].valid = false;
     }
 
@@ -400,13 +415,14 @@ export default class BmfontAssembler extends Assembler2D {
             let tmpInfo = new LetterInfo();
             _lettersInfo.push(tmpInfo);
         }
-        let char = character.charCodeAt(0);
-        let key = char + shareLabelInfo.hash;
+
+        let key = character.codePointAt() + shareLabelInfo.hash;
 
         _lettersInfo[letterIndex].line = lineIndex;
         _lettersInfo[letterIndex].char = character;
         _lettersInfo[letterIndex].hash = key;
-        _lettersInfo[letterIndex].valid = shareLabelInfo.fontAtlas.getLetter(key).valid;
+        let letter = shareLabelInfo.fontAtlas.getLetter(key);
+        _lettersInfo[letterIndex].valid = letter ? letter.valid : false;
         _lettersInfo[letterIndex].x = letterPosition.x;
         _lettersInfo[letterIndex].y = letterPosition.y;
     }

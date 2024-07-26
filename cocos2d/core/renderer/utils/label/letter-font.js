@@ -54,7 +54,7 @@ function LetterTexture(char, labelInfo) {
     this._width = 0;
     this._height = 0;
     this._offsetY = 0;
-    this._hash = char.charCodeAt(0) + labelInfo.hash;
+    this._hash = char.codePointAt() + labelInfo.hash;
 }
 
 LetterTexture.prototype = {
