@@ -29,11 +29,11 @@ const FIX_IOS14_BUFFER = (cc.sys.os === cc.sys.OS_IOS || cc.sys.os === cc.sys.OS
 
 let MeshBuffer = cc.Class({
     name: 'cc.MeshBuffer',
-    ctor (batcher, vertexFormat) {
-        this.init (batcher, vertexFormat);
+    ctor(batcher, vertexFormat) {
+        this.init(batcher, vertexFormat);
     },
 
-    init (batcher, vertexFormat) {
+    init(batcher, vertexFormat) {
         this.byteOffset = 0;
         this.indiceOffset = 0;
         this.vertexOffset = 0;
@@ -73,16 +73,16 @@ let MeshBuffer = cc.Class({
 
         this._initVDataCount = 256 * vertexFormat._bytes;// actually 256 * 4 * (vertexFormat._bytes / 4)
         this._initIDataCount = 256 * 6;
-        
+
         this._offsetInfo = {
-            byteOffset : 0,
-            vertexOffset : 0,
-            indiceOffset : 0
+            byteOffset: 0,
+            vertexOffset: 0,
+            indiceOffset: 0
         }
         this._reallocBuffer();
     },
 
-    uploadData () {
+    uploadData() {
         if (this.byteOffset === 0 || !this._dirty) {
             return;
         }
@@ -100,7 +100,7 @@ let MeshBuffer = cc.Class({
         this._dirty = false;
     },
 
-    switchBuffer () {
+    switchBuffer() {
         let offset = ++this._arrOffset;
 
         this.byteOffset = 0;
@@ -133,7 +133,7 @@ let MeshBuffer = cc.Class({
         }
     },
 
-    checkAndSwitchBuffer (vertexCount) {
+    checkAndSwitchBuffer(vertexCount) {
         if (this.vertexOffset + vertexCount > 65535) {
             this.uploadData();
             this._batcher._flush();
@@ -141,7 +141,7 @@ let MeshBuffer = cc.Class({
         }
     },
 
-    requestStatic (vertexCount, indiceCount) {
+    requestStatic(vertexCount, indiceCount) {
 
         this.checkAndSwitchBuffer(vertexCount);
 
@@ -164,7 +164,7 @@ let MeshBuffer = cc.Class({
         this._updateOffset(vertexCount, indiceCount, byteOffset);
     },
 
-    _updateOffset (vertexCount, indiceCount, byteOffset) {
+    _updateOffset(vertexCount, indiceCount, byteOffset) {
         let offsetInfo = this._offsetInfo;
         offsetInfo.vertexOffset = this.vertexOffset;
         this.vertexOffset += vertexCount;
@@ -178,7 +178,7 @@ let MeshBuffer = cc.Class({
         this._dirty = true;
     },
 
-    request (vertexCount, indiceCount) {
+    request(vertexCount, indiceCount) {
         if (this._batcher._buffer !== this) {
             this._batcher._flush();
             this._batcher._buffer = this;
@@ -187,13 +187,13 @@ let MeshBuffer = cc.Class({
         this.requestStatic(vertexCount, indiceCount);
         return this._offsetInfo;
     },
-    
-    _reallocBuffer () {
+
+    _reallocBuffer() {
         this._reallocVData(true);
         this._reallocIData(true);
     },
 
-    _reallocVData (copyOldData) {
+    _reallocVData(copyOldData) {
         let oldVData;
         if (this._vData) {
             oldVData = new Uint8Array(this._vData.buffer);
@@ -211,7 +211,7 @@ let MeshBuffer = cc.Class({
         }
     },
 
-    _reallocIData (copyOldData) {
+    _reallocIData(copyOldData) {
         let oldIData = this._iData;
 
         this._iData = new Uint16Array(this._initIDataCount);
@@ -224,7 +224,7 @@ let MeshBuffer = cc.Class({
         }
     },
 
-    reset () {
+    reset() {
         this._arrOffset = 0;
         this._vb = this._vbArr[0];
         this._ib = this._ibArr[0];
@@ -237,9 +237,9 @@ let MeshBuffer = cc.Class({
         this._dirty = false;
     },
 
-    destroy () {
+    destroy() {
         this.reset();
-        for (let i = 0; i <  this._vbArr.length; i++) {
+        for (let i = 0; i < this._vbArr.length; i++) {
             let vb = this._vbArr[i];
             vb.destroy();
         }
@@ -255,7 +255,7 @@ let MeshBuffer = cc.Class({
         this._vb = null;
     },
 
-    forwardIndiceStartToOffset () {
+    forwardIndiceStartToOffset() {
         this.indiceStart = this.indiceOffset;
     }
 });
@@ -268,11 +268,11 @@ if (FIX_IOS14_BUFFER) {
             this.uploadData();
             this._batcher._flush();
         }
-    };     
+    };
     MeshBuffer.prototype.forwardIndiceStartToOffset = function () {
         this.uploadData();
         this.switchBuffer();
-    }  
+    }
 }
 
 cc.MeshBuffer = module.exports = MeshBuffer;

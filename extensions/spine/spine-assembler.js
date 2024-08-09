@@ -79,7 +79,7 @@ let _x, _y, _m00, _m04, _m12, _m01, _m05, _m13;
 let _r, _g, _b, _fr, _fg, _fb, _fa, _dr, _dg, _db, _da;
 let _comp, _buffer, _renderer, _node, _needColor, _vertexEffect;
 
-function _getSlotMaterial (tex, blendMode) {
+function _getSlotMaterial(tex, blendMode) {
     let src, dst;
     switch (blendMode) {
         case spine.BlendMode.Additive:
@@ -116,7 +116,7 @@ function _getSlotMaterial (tex, blendMode) {
         } else {
             material = cc.MaterialVariant.create(baseMaterial);
         }
-        
+
         material.define('CC_USE_MODEL', useModel);
         material.define('USE_TINT', _useTint);
         // update texture
@@ -135,7 +135,7 @@ function _getSlotMaterial (tex, blendMode) {
     return material;
 }
 
-function _handleColor (color) {
+function _handleColor(color) {
     // temp rgb has multiply 255, so need divide 255;
     _fa = color.fa * _nodeA;
     _multiplier = _premultipliedAlpha ? _fa / 255 : 1;
@@ -146,21 +146,21 @@ function _handleColor (color) {
     _fr = color.fr * _r;
     _fg = color.fg * _g;
     _fb = color.fb * _b;
-    _finalColor32 = ((_fa<<24) >>> 0) + (_fb<<16) + (_fg<<8) + _fr;
+    _finalColor32 = ((_fa << 24) >>> 0) + (_fb << 16) + (_fg << 8) + _fr;
 
     _dr = color.dr * _r;
     _dg = color.dg * _g;
     _db = color.db * _b;
     _da = _premultipliedAlpha ? 255 : 0;
-    _darkColor32 = ((_da<<24) >>> 0) + (_db<<16) + (_dg<<8) + _dr;
+    _darkColor32 = ((_da << 24) >>> 0) + (_db << 16) + (_dg << 8) + _dr;
 }
 
-function _spineColorToInt32 (spineColor) {
-    return ((spineColor.a<<24) >>> 0) + (spineColor.b<<16) + (spineColor.g<<8) + spineColor.r;
+function _spineColorToInt32(spineColor) {
+    return ((spineColor.a << 24) >>> 0) + (spineColor.b << 16) + (spineColor.g << 8) + spineColor.r;
 }
 
 export default class SpineAssembler extends Assembler {
-    updateRenderData (comp) {
+    updateRenderData(comp) {
         if (comp.isAnimationCached()) return;
         let skeleton = comp._skeleton;
         if (skeleton) {
@@ -168,7 +168,7 @@ export default class SpineAssembler extends Assembler {
         }
     }
 
-    fillVertices (skeletonColor, attachmentColor, slotColor, clipper, slot) {
+    fillVertices(skeletonColor, attachmentColor, slotColor, clipper, slot) {
 
         let vbuf = _buffer._vData,
             ibuf = _buffer._iData,
@@ -176,11 +176,11 @@ export default class SpineAssembler extends Assembler {
         let offsetInfo;
 
         _finalColor.a = slotColor.a * attachmentColor.a * skeletonColor.a * _nodeA * 255;
-        _multiplier = _premultipliedAlpha? _finalColor.a : 255;
+        _multiplier = _premultipliedAlpha ? _finalColor.a : 255;
         _tempr = _nodeR * attachmentColor.r * skeletonColor.r * _multiplier;
         _tempg = _nodeG * attachmentColor.g * skeletonColor.g * _multiplier;
         _tempb = _nodeB * attachmentColor.b * skeletonColor.b * _multiplier;
-        
+
         _finalColor.r = _tempr * slotColor.r;
         _finalColor.g = _tempg * slotColor.g;
         _finalColor.b = _tempb * slotColor.b;
@@ -203,20 +203,20 @@ export default class SpineAssembler extends Assembler {
                     _tempUv.y = vbuf[v + 3];
                     _vertexEffect.transform(_tempPos, _tempUv, _finalColor, _darkColor);
 
-                    vbuf[v]     = _tempPos.x;        // x
+                    vbuf[v] = _tempPos.x;        // x
                     vbuf[v + 1] = _tempPos.y;        // y
                     vbuf[v + 2] = _tempUv.x;         // u
                     vbuf[v + 3] = _tempUv.y;         // v
-                    uintVData[v + 4]  = _spineColorToInt32(_finalColor);                  // light color
+                    uintVData[v + 4] = _spineColorToInt32(_finalColor);                  // light color
                     _useTint && (uintVData[v + 5] = _spineColorToInt32(_darkColor));      // dark color
                 }
             } else {
                 _finalColor32 = _spineColorToInt32(_finalColor);
                 _darkColor32 = _spineColorToInt32(_darkColor);
-                
+
                 for (let v = _vertexFloatOffset, n = _vertexFloatOffset + _vertexFloatCount; v < n; v += _perVertexSize) {
-                    uintVData[v + 4]  = _finalColor32;                   // light color
-                    _useTint && (uintVData[v + 5]  = _darkColor32);      // dark color
+                    uintVData[v + 4] = _finalColor32;                   // light color
+                    _useTint && (uintVData[v + 5] = _darkColor32);      // dark color
                 }
             }
         } else {
@@ -224,17 +224,17 @@ export default class SpineAssembler extends Assembler {
             clipper.clipTriangles(vbuf.subarray(_vertexFloatOffset), _vertexFloatCount, ibuf.subarray(_indexOffset), _indexCount, uvs, _finalColor, _darkColor, _useTint, _perVertexSize);
             let clippedVertices = new Float32Array(clipper.clippedVertices);
             let clippedTriangles = clipper.clippedTriangles;
-            
+
             // insure capacity
             _indexCount = clippedTriangles.length;
             _vertexFloatCount = clippedVertices.length / _perClipVertexSize * _perVertexSize;
 
             offsetInfo = _buffer.request(_vertexFloatCount / _perVertexSize, _indexCount);
             _indexOffset = offsetInfo.indiceOffset,
-            _vertexOffset = offsetInfo.vertexOffset,
-            _vertexFloatOffset = offsetInfo.byteOffset >> 2;
+                _vertexOffset = offsetInfo.vertexOffset,
+                _vertexFloatOffset = offsetInfo.byteOffset >> 2;
             vbuf = _buffer._vData,
-            ibuf = _buffer._iData;
+                ibuf = _buffer._iData;
             uintVData = _buffer._uintVData;
 
             // fill indices
@@ -266,16 +266,16 @@ export default class SpineAssembler extends Assembler {
                 }
             } else {
                 for (let v = 0, n = clippedVertices.length, offset = _vertexFloatOffset; v < n; v += _perClipVertexSize, offset += _perVertexSize) {
-                    vbuf[offset]     = clippedVertices[v];         // x
+                    vbuf[offset] = clippedVertices[v];         // x
                     vbuf[offset + 1] = clippedVertices[v + 1];     // y
                     vbuf[offset + 2] = clippedVertices[v + 6];     // u
                     vbuf[offset + 3] = clippedVertices[v + 7];     // v
 
-                    _finalColor32 = ((clippedVertices[v + 5]<<24) >>> 0) + (clippedVertices[v + 4]<<16) + (clippedVertices[v + 3]<<8) + clippedVertices[v + 2];
+                    _finalColor32 = ((clippedVertices[v + 5] << 24) >>> 0) + (clippedVertices[v + 4] << 16) + (clippedVertices[v + 3] << 8) + clippedVertices[v + 2];
                     uintVData[offset + 4] = _finalColor32;
 
                     if (_useTint) {
-                        _darkColor32 = ((clippedVertices[v + 11]<<24) >>> 0) + (clippedVertices[v + 10]<<16) + (clippedVertices[v + 9]<<8) + clippedVertices[v + 8];
+                        _darkColor32 = ((clippedVertices[v + 11] << 24) >>> 0) + (clippedVertices[v + 10] << 16) + (clippedVertices[v + 9] << 8) + clippedVertices[v + 8];
                         uintVData[offset + 5] = _darkColor32;
                     }
                 }
@@ -283,7 +283,7 @@ export default class SpineAssembler extends Assembler {
         }
     }
 
-    realTimeTraverse (worldMat) {
+    realTimeTraverse(worldMat) {
         let vbuf;
         let ibuf;
 
@@ -310,10 +310,10 @@ export default class SpineAssembler extends Assembler {
             graphics.clear();
             graphics.lineWidth = 2;
         }
-    
+
         // x y u v r1 g1 b1 a1 r2 g2 b2 a2 or x y u v r g b a 
         _perClipVertexSize = _useTint ? 12 : 8;
-    
+
         _vertexFloatCount = 0;
         _vertexFloatOffset = 0;
         _vertexOffset = 0;
@@ -323,23 +323,23 @@ export default class SpineAssembler extends Assembler {
         for (let slotIdx = 0, slotCount = locSkeleton.drawOrder.length; slotIdx < slotCount; slotIdx++) {
             slot = locSkeleton.drawOrder[slotIdx];
 
-            if(slot == undefined) {
+            if (slot == undefined) {
                 continue;
             }
 
             if (_slotRangeStart >= 0 && _slotRangeStart == slot.data.index) {
                 _inRange = true;
             }
-            
+
             if (!_inRange) {
                 clipper.clipEndWithSlot(slot);
                 continue;
             }
-    
+
             if (_slotRangeEnd >= 0 && _slotRangeEnd == slot.data.index) {
                 _inRange = false;
             }
-    
+
             _vertexFloatCount = 0;
             _indexCount = 0;
 
@@ -377,23 +377,23 @@ export default class SpineAssembler extends Assembler {
             }
 
             if (isRegion) {
-                
+
                 triangles = _quadTriangles;
-    
+
                 // insure capacity
                 _vertexFloatCount = 4 * _perVertexSize;
                 _indexCount = 6;
 
                 offsetInfo = _buffer.request(4, 6);
                 _indexOffset = offsetInfo.indiceOffset,
-                _vertexOffset = offsetInfo.vertexOffset,
-                _vertexFloatOffset = offsetInfo.byteOffset >> 2;
+                    _vertexOffset = offsetInfo.vertexOffset,
+                    _vertexFloatOffset = offsetInfo.byteOffset >> 2;
                 vbuf = _buffer._vData,
-                ibuf = _buffer._iData;
-    
+                    ibuf = _buffer._iData;
+
                 // compute vertex and fill x y
                 attachment.computeWorldVertices(slot.bone, vbuf, _vertexFloatOffset, _perVertexSize);
-    
+
                 // draw debug slots if enabled graphics
                 if (graphics && _debugSlots) {
                     graphics.strokeColor = _slotColor;
@@ -406,20 +406,20 @@ export default class SpineAssembler extends Assembler {
                 }
             }
             else if (isMesh) {
-                
+
                 triangles = attachment.triangles;
-    
+
                 // insure capacity
                 _vertexFloatCount = (attachment.worldVerticesLength >> 1) * _perVertexSize;
                 _indexCount = triangles.length;
 
                 offsetInfo = _buffer.request(_vertexFloatCount / _perVertexSize, _indexCount);
                 _indexOffset = offsetInfo.indiceOffset,
-                _vertexOffset = offsetInfo.vertexOffset,
-                _vertexFloatOffset = offsetInfo.byteOffset >> 2;
+                    _vertexOffset = offsetInfo.vertexOffset,
+                    _vertexFloatOffset = offsetInfo.byteOffset >> 2;
                 vbuf = _buffer._vData,
-                ibuf = _buffer._iData;
-    
+                    ibuf = _buffer._iData;
+
                 // compute vertex and fill x y
                 attachment.computeWorldVertices(slot, 0, attachment.worldVerticesLength, vbuf, _vertexFloatOffset, _perVertexSize);
 
@@ -431,7 +431,7 @@ export default class SpineAssembler extends Assembler {
                         let v1 = triangles[ii] * _perVertexSize + _vertexFloatOffset;
                         let v2 = triangles[ii + 1] * _perVertexSize + _vertexFloatOffset;
                         let v3 = triangles[ii + 2] * _perVertexSize + _vertexFloatOffset;
-                        
+
                         graphics.moveTo(vbuf[v1], vbuf[v1 + 1]);
                         graphics.lineTo(vbuf[v2], vbuf[v2 + 1]);
                         graphics.lineTo(vbuf[v3], vbuf[v3 + 1]);
@@ -440,12 +440,12 @@ export default class SpineAssembler extends Assembler {
                     }
                 }
             }
-    
+
             if (_vertexFloatCount == 0 || _indexCount == 0) {
                 clipper.clipEndWithSlot(slot);
                 continue;
             }
-    
+
             // fill indices
             ibuf.set(triangles, _indexOffset);
 
@@ -457,14 +457,14 @@ export default class SpineAssembler extends Assembler {
             }
 
             attachmentColor = attachment.color,
-            slotColor = slot.color;
+                slotColor = slot.color;
 
             this.fillVertices(skeletonColor, attachmentColor, slotColor, clipper, slot);
-            
+
             // reset buffer pointer, because clipper maybe realloc a new buffer in file Vertices function.
             vbuf = _buffer._vData,
-            ibuf = _buffer._iData;
-    
+                ibuf = _buffer._iData;
+
             if (_indexCount > 0) {
                 for (let ii = _indexOffset, nn = _indexOffset + _indexCount; ii < nn; ii++) {
                     ibuf[ii] += _vertexOffset;
@@ -487,27 +487,27 @@ export default class SpineAssembler extends Assembler {
                 }
                 _buffer.adjust(_vertexFloatCount / _perVertexSize, _indexCount);
             }
-    
+
             clipper.clipEndWithSlot(slot);
         }
-    
+
         clipper.clipEnd();
-    
+
         if (graphics && _debugBones) {
             let bone;
             graphics.strokeColor = _boneColor;
             graphics.fillColor = _slotColor; // Root bone color is same as slot color.
-    
+
             for (let i = 0, n = locSkeleton.bones.length; i < n; i++) {
                 bone = locSkeleton.bones[i];
                 let x = bone.data.length * bone.a + bone.worldX;
                 let y = bone.data.length * bone.c + bone.worldY;
-    
+
                 // Bone lengths.
                 graphics.moveTo(bone.worldX, bone.worldY);
                 graphics.lineTo(x, y);
                 graphics.stroke();
-    
+
                 // Bone origins.
                 graphics.circle(bone.worldX, bone.worldY, Math.PI * 1.5);
                 graphics.fill();
@@ -518,8 +518,8 @@ export default class SpineAssembler extends Assembler {
         }
     }
 
-    cacheTraverse (worldMat) {
-        
+    cacheTraverse(worldMat) {
+
         let frame = _comp._curFrame;
         if (!frame) return;
 
@@ -600,7 +600,7 @@ export default class SpineAssembler extends Assembler {
             }
 
             _buffer.adjust(_vertexCount, _indexCount);
-            if ( !_needColor ) continue;
+            if (!_needColor) continue;
 
             // handle color
             let frameColorOffset = frameVFOffset - segVFCount;
@@ -616,8 +616,8 @@ export default class SpineAssembler extends Assembler {
         }
     }
 
-    fillBuffers (comp, renderer) {
-        
+    fillBuffers(comp, renderer) {
+
         let node = comp.node;
         node._renderFlag |= RenderFlow.FLAG_UPDATE_RENDER_DATA;
         if (!comp._skeleton) return;
@@ -629,7 +629,7 @@ export default class SpineAssembler extends Assembler {
         _nodeA = nodeColor.a / 255;
 
         _useTint = comp.useTint || comp.isAnimationCached();
-        _vertexFormat = _useTint? VFTwoColor : VFOneColor;
+        _vertexFormat = _useTint ? VFTwoColor : VFOneColor;
         // x y u v color1 color2 or x y u v color
         _perVertexSize = _useTint ? 6 : 5;
 
@@ -681,7 +681,7 @@ export default class SpineAssembler extends Assembler {
         _vertexEffect = null;
     }
 
-    postFillBuffers (comp, renderer) {
+    postFillBuffers(comp, renderer) {
         renderer.worldMatDirty--;
     }
 }
