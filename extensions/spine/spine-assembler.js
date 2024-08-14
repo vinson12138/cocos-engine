@@ -29,8 +29,8 @@ const Skeleton = require('./Skeleton');
 const spine = require('./lib/spine');
 const RenderFlow = require('../../cocos2d/core/renderer/render-flow');
 const VertexFormat = require('../../cocos2d/core/renderer/webgl/vertex-format')
-const VFOneColor = VertexFormat.vfmtPosUvColor;
-const VFTwoColor = VertexFormat.vfmtPosUvTwoColor;
+const VFOneColor = VertexFormat.vfmt3D;
+const VFTwoColor = VertexFormat.vfmtPos3UvTwoColor;
 const gfx = cc.gfx;
 
 const FLAG_BATCH = 0x10;
@@ -70,14 +70,28 @@ let _vertexFormat;
 let _perVertexSize;
 let _perClipVertexSize;
 
-let _vertexFloatCount = 0, _vertexCount = 0, _vertexFloatOffset = 0, _vertexOffset = 0,
-    _indexCount = 0, _indexOffset = 0, _vfOffset = 0;
+/** 当前slot的顶点浮点数计数 */
+let _vertexFloatCount = 0;
+let _vertexCount = 0;
+let _vertexFloatOffset = 0;
+/** 此时的顶点在vbo的偏移 */
+let _vertexOffset = 0;
+/** 当前slot的顶点索引计数 */
+let _indexCount = 0;
+/** 此时的顶点在ibo的偏移 */
+let _indexOffset = 0;
+let _vfOffset = 0;
+
 let _tempr, _tempg, _tempb;
 let _inRange;
 let _mustFlush;
 let _x, _y, _m00, _m04, _m12, _m01, _m05, _m13;
 let _r, _g, _b, _fr, _fg, _fb, _fa, _dr, _dg, _db, _da;
 let _comp, _buffer, _renderer, _node, _needColor, _vertexEffect;
+let _depth;
+let _realtimeVertices = [];
+/** 实时渲染的顶点大小(字节)，读取skeleton时用 */
+let _realtimeSizePerVertex = 0;
 
 function _getSlotMaterial(tex, blendMode) {
     let src, dst;
@@ -168,7 +182,7 @@ export default class SpineAssembler extends Assembler {
         }
     }
 
-    fillVertices(skeletonColor, attachmentColor, slotColor, clipper, slot) {
+    fillVertices(skeletonColor, attachmentColor, slotColor, clipper, slot, slotIdx) {
 
         let vbuf = _buffer._vData,
             ibuf = _buffer._iData,
@@ -194,33 +208,33 @@ export default class SpineAssembler extends Assembler {
         }
         _darkColor.a = _premultipliedAlpha ? 255 : 0;
 
-        if (!clipper.isClipping()) {
+        if (/**!clipper.isClipping()*/true) {
             if (_vertexEffect) {
                 for (let v = _vertexFloatOffset, n = _vertexFloatOffset + _vertexFloatCount; v < n; v += _perVertexSize) {
                     _tempPos.x = vbuf[v];
                     _tempPos.y = vbuf[v + 1];
-                    _tempUv.x = vbuf[v + 2];
-                    _tempUv.y = vbuf[v + 3];
+                    _tempUv.x = vbuf[v + 3];
+                    _tempUv.y = vbuf[v + 4];
                     _vertexEffect.transform(_tempPos, _tempUv, _finalColor, _darkColor);
 
                     vbuf[v] = _tempPos.x;        // x
                     vbuf[v + 1] = _tempPos.y;        // y
-                    vbuf[v + 2] = _tempUv.x;         // u
-                    vbuf[v + 3] = _tempUv.y;         // v
-                    uintVData[v + 4] = _spineColorToInt32(_finalColor);                  // light color
-                    _useTint && (uintVData[v + 5] = _spineColorToInt32(_darkColor));      // dark color
+                    vbuf[v + 3] = _tempUv.x;         // u
+                    vbuf[v + 4] = _tempUv.y;         // v
+                    uintVData[v + 5] = _spineColorToInt32(_finalColor);                  // light color
+                    _useTint && (uintVData[v + 6] = _spineColorToInt32(_darkColor));      // dark color
                 }
             } else {
                 _finalColor32 = _spineColorToInt32(_finalColor);
                 _darkColor32 = _spineColorToInt32(_darkColor);
 
                 for (let v = _vertexFloatOffset, n = _vertexFloatOffset + _vertexFloatCount; v < n; v += _perVertexSize) {
-                    uintVData[v + 4] = _finalColor32;                   // light color
-                    _useTint && (uintVData[v + 5] = _darkColor32);      // dark color
+                    uintVData[v + 5] = _finalColor32;                   // light color
+                    _useTint && (uintVData[v + 6] = _darkColor32);      // dark color
                 }
             }
         } else {
-            let uvs = vbuf.subarray(_vertexFloatOffset + 2);
+            let uvs = vbuf.subarray(_vertexFloatOffset + 3);
             clipper.clipTriangles(vbuf.subarray(_vertexFloatOffset), _vertexFloatCount, ibuf.subarray(_indexOffset), _indexCount, uvs, _finalColor, _darkColor, _useTint, _perVertexSize);
             let clippedVertices = new Float32Array(clipper.clippedVertices);
             let clippedTriangles = clipper.clippedTriangles;
@@ -319,6 +333,7 @@ export default class SpineAssembler extends Assembler {
         _vertexOffset = 0;
         _indexCount = 0;
         _indexOffset = 0;
+        _realtimeVertices.length = 0;
 
         for (let slotIdx = 0, slotCount = locSkeleton.drawOrder.length; slotIdx < slotCount; slotIdx++) {
             slot = locSkeleton.drawOrder[slotIdx];
@@ -342,6 +357,7 @@ export default class SpineAssembler extends Assembler {
 
             _vertexFloatCount = 0;
             _indexCount = 0;
+            _realtimeVertices.length = 0;
 
             attachment = slot.getAttachment();
             if (!attachment) {
@@ -392,7 +408,11 @@ export default class SpineAssembler extends Assembler {
                     ibuf = _buffer._iData;
 
                 // compute vertex and fill x y
-                attachment.computeWorldVertices(slot.bone, vbuf, _vertexFloatOffset, _perVertexSize);
+                // attachment.computeWorldVertices(slot.bone, vbuf, _vertexFloatOffset, _perVertexSize);
+                attachment.computeWorldVertices(slot.bone, _realtimeVertices, 0, _realtimeSizePerVertex);
+
+                //将此slot的顶点写入缓存区
+                this._writeVertex2ToVertex3Buffer(_realtimeVertices, vbuf, _vertexFloatOffset, 4, slotIdx);
 
                 // draw debug slots if enabled graphics
                 if (graphics && _debugSlots) {
@@ -421,7 +441,11 @@ export default class SpineAssembler extends Assembler {
                     ibuf = _buffer._iData;
 
                 // compute vertex and fill x y
-                attachment.computeWorldVertices(slot, 0, attachment.worldVerticesLength, vbuf, _vertexFloatOffset, _perVertexSize);
+                // attachment.computeWorldVertices(slot, 0, attachment.worldVerticesLength, vbuf, _vertexFloatOffset, _perVertexSize);
+                attachment.computeWorldVertices(slot, 0, attachment.worldVerticesLength, _realtimeVertices, 0, _realtimeSizePerVertex);
+
+                //将此slot的顶点写入缓存区
+                this._writeVertex2ToVertex3Buffer(_realtimeVertices, vbuf, _vertexFloatOffset, _vertexFloatCount / _perVertexSize, slotIdx);
 
                 // draw debug mesh if enabled graphics
                 if (graphics && _debugMesh) {
@@ -452,14 +476,14 @@ export default class SpineAssembler extends Assembler {
             // fill u v
             uvs = attachment.uvs;
             for (let v = _vertexFloatOffset, n = _vertexFloatOffset + _vertexFloatCount, u = 0; v < n; v += _perVertexSize, u += 2) {
-                vbuf[v + 2] = uvs[u];           // u
-                vbuf[v + 3] = uvs[u + 1];       // v
+                vbuf[v + 3] = uvs[u];           // u
+                vbuf[v + 4] = uvs[u + 1];       // v
             }
 
             attachmentColor = attachment.color,
                 slotColor = slot.color;
 
-            this.fillVertices(skeletonColor, attachmentColor, slotColor, clipper, slot);
+            this.fillVertices(skeletonColor, attachmentColor, slotColor, clipper, slot, slotIdx);
 
             // reset buffer pointer, because clipper maybe realloc a new buffer in file Vertices function.
             vbuf = _buffer._vData,
@@ -518,6 +542,23 @@ export default class SpineAssembler extends Assembler {
         }
     }
 
+    _writeVertex2ToVertex3Buffer(vertex2Array, vertex3Buffer, offset, vertexCount, slotIdx) {
+        for (let i = 0; i < vertexCount; i++) {
+            let dstOffset = i * _perVertexSize + offset;
+            let srcOffset = i * _realtimeSizePerVertex;
+
+            vertex3Buffer[dstOffset] = vertex2Array[srcOffset];         //x
+            vertex3Buffer[dstOffset + 1] = vertex2Array[srcOffset + 1]; //y
+            vertex3Buffer[dstOffset + 2] = _depth - 1e-6 * slotIdx;          //z
+            vertex3Buffer[dstOffset + 3] = vertex2Array[srcOffset + 2]; //u
+            vertex3Buffer[dstOffset + 4] = vertex2Array[srcOffset + 3]; //v
+            vertex3Buffer[dstOffset + 5] = vertex2Array[srcOffset + 4]; //c1
+            if (_useTint) {
+                vertex3Buffer[dstOffset + 6] = vertex2Array[srcOffset + 5]; //c2
+            }
+        }
+    }
+
     cacheTraverse(worldMat) {
 
         let frame = _comp._curFrame;
@@ -525,6 +566,8 @@ export default class SpineAssembler extends Assembler {
 
         let segments = frame.segments;
         if (segments.length == 0) return;
+
+        let offsets = frame.offsets;
 
         let vbuf, ibuf, uintbuf;
         let material;
@@ -582,16 +625,34 @@ export default class SpineAssembler extends Assembler {
             }
 
             segVFCount = segInfo.vfCount;
-            vbuf.set(vertices.subarray(frameVFOffset, frameVFOffset + segVFCount), _vfOffset);
+            let renderVertexCount = _vertexCount * _perVertexSize;
+            for (let i = 0; i < _vertexCount; i++) {
+                let dstOffset = _vfOffset + i * 7;
+                let srcOffset = frameVFOffset + i * 6;
+
+                vbuf[dstOffset] = vertices[srcOffset];
+                vbuf[dstOffset + 1] = vertices[srcOffset + 1];
+                let j, len;
+                for (j = 0, len = offsets.length; j < len; j++) {
+                    if (srcOffset <= offsets[j]) break;
+                }
+                vbuf[dstOffset + 2] = _depth - 1e-6 * j;   //todo depth + 自己深度
+                vbuf[dstOffset + 3] = vertices[srcOffset + 2];
+                vbuf[dstOffset + 4] = vertices[srcOffset + 3];
+                vbuf[dstOffset + 5] = vertices[srcOffset + 4];
+                vbuf[dstOffset + 6] = vertices[srcOffset + 5];
+            }
+
+            // vbuf.set(vertices.subarray(frameVFOffset, frameVFOffset + segVFCount), _vfOffset);
             frameVFOffset += segVFCount;
 
             if (calcTranslate) {
-                for (let ii = _vfOffset, il = _vfOffset + segVFCount; ii < il; ii += 6) {
+                for (let ii = _vfOffset, il = _vfOffset + renderVertexCount; ii < il; ii += 7) {
                     vbuf[ii] += _m12;
                     vbuf[ii + 1] += _m13;
                 }
             } else if (needBatch) {
-                for (let ii = _vfOffset, il = _vfOffset + segVFCount; ii < il; ii += 6) {
+                for (let ii = _vfOffset, il = _vfOffset + renderVertexCount; ii < il; ii += 7) {
                     _x = vbuf[ii];
                     _y = vbuf[ii + 1];
                     vbuf[ii] = _x * _m00 + _y * _m04 + _m12;
@@ -604,7 +665,7 @@ export default class SpineAssembler extends Assembler {
 
             // handle color
             let frameColorOffset = frameVFOffset - segVFCount;
-            for (let ii = _vfOffset + 4, il = _vfOffset + 4 + segVFCount; ii < il; ii += 6, frameColorOffset += 6) {
+            for (let ii = _vfOffset + 5, il = _vfOffset + 5 + segVFCount; ii < il; ii += 7, frameColorOffset += 6) {
                 if (frameColorOffset >= maxVFOffset) {
                     nowColor = colors[colorOffset++];
                     _handleColor(nowColor);
@@ -630,13 +691,15 @@ export default class SpineAssembler extends Assembler {
 
         _useTint = comp.useTint || comp.isAnimationCached();
         _vertexFormat = _useTint ? VFTwoColor : VFOneColor;
-        // x y u v color1 color2 or x y u v color
-        _perVertexSize = _useTint ? 6 : 5;
+        // x y z u v color1 color2 or x y u v color
+        _perVertexSize = _useTint ? 7 : 6;
+        _realtimeSizePerVertex = _useTint ? 6 : 5;
 
         _node = comp.node;
         _buffer = renderer.getBuffer('spine', _vertexFormat);
         _renderer = renderer;
         _comp = comp;
+        _depth = _node.depth || 0;
 
         _mustFlush = true;
         _premultipliedAlpha = comp.premultipliedAlpha;

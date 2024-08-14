@@ -65,7 +65,13 @@ var SpriteType = cc.Enum({
      * !#zh 以 Mesh 三角形组成的类型
      * @property {Number} MESH
      */
-    MESH: 4
+    MESH: 4,
+    /**
+     * !#en The simple+depth type.
+     * !#zh 简单深度类型
+     * @property {Number}
+     */
+    SIMPLE_DEPTH: 5,
 });
 
 /**
@@ -91,7 +97,7 @@ var FillType = cc.Enum({
      * !#zh 径向填充
      * @property {Number} RADIAL
      */
-    RADIAL:2,
+    RADIAL: 2,
 });
 
 /**
@@ -171,7 +177,7 @@ var Sprite = cc.Class({
         _type: SpriteType.SIMPLE,
         _sizeMode: SizeMode.TRIMMED,
         _fillType: 0,
-        _fillCenter: cc.v2(0,0),
+        _fillCenter: cc.v2(0, 0),
         _fillStart: 0,
         _fillRange: 0,
         _isTrimmedMode: true,
@@ -193,10 +199,10 @@ var Sprite = cc.Class({
          * sprite.spriteFrame = newSpriteFrame;
          */
         spriteFrame: {
-            get () {
+            get() {
                 return this._spriteFrame;
             },
-            set (value, force) {
+            set(value, force) {
                 var lastSprite = this._spriteFrame;
                 if (CC_EDITOR) {
                     if (!force && ((lastSprite && lastSprite._uuid) === (value && value._uuid))) {
@@ -226,10 +232,10 @@ var Sprite = cc.Class({
          * sprite.type = cc.Sprite.Type.SIMPLE;
          */
         type: {
-            get () {
+            get() {
                 return this._type;
             },
-            set (value) {
+            set(value) {
                 if (this._type !== value) {
                     this._type = value;
                     this.setVertsDirty();
@@ -251,11 +257,11 @@ var Sprite = cc.Class({
          * @example
          * sprite.fillType = cc.Sprite.FillType.HORIZONTAL;
          */
-        fillType : {
-            get () {
+        fillType: {
+            get() {
                 return this._fillType;
             },
-            set (value) {
+            set(value) {
                 if (value !== this._fillType) {
                     this._fillType = value;
                     this.setVertsDirty();
@@ -277,10 +283,10 @@ var Sprite = cc.Class({
          * sprite.fillCenter = new cc.Vec2(0, 0);
          */
         fillCenter: {
-            get () {
+            get() {
                 return this._fillCenter;
             },
-            set (value) {
+            set(value) {
                 this._fillCenter.x = value.x;
                 this._fillCenter.y = value.y;
                 if (this._type === SpriteType.FILLED) {
@@ -302,10 +308,10 @@ var Sprite = cc.Class({
          * sprite.fillStart = 0.5;
          */
         fillStart: {
-            get () {
+            get() {
                 return this._fillStart;
             },
-            set (value) {
+            set(value) {
                 this._fillStart = misc.clampf(value, -1, 1);
                 if (this._type === SpriteType.FILLED) {
                     this.setVertsDirty();
@@ -326,10 +332,10 @@ var Sprite = cc.Class({
          * sprite.fillRange = 1;
          */
         fillRange: {
-            get () {
+            get() {
                 return this._fillRange;
             },
-            set (value) {
+            set(value) {
                 this._fillRange = misc.clampf(value, -1, 1);
                 if (this._type === SpriteType.FILLED) {
                     this.setVertsDirty();
@@ -346,10 +352,10 @@ var Sprite = cc.Class({
          * sprite.trim = true;
          */
         trim: {
-            get () {
+            get() {
                 return this._isTrimmedMode;
             },
-            set (value) {
+            set(value) {
                 if (this._isTrimmedMode !== value) {
                     this._isTrimmedMode = value;
                     if (this._type === SpriteType.SIMPLE || this._type === SpriteType.MESH) {
@@ -361,7 +367,7 @@ var Sprite = cc.Class({
             tooltip: CC_DEV && 'i18n:COMPONENT.sprite.trim'
         },
 
-      
+
         /**
          * !#en specify the size tracing mode.
          * !#zh 精灵尺寸调整模式
@@ -371,10 +377,10 @@ var Sprite = cc.Class({
          * sprite.sizeMode = cc.Sprite.SizeMode.CUSTOM;
          */
         sizeMode: {
-            get () {
+            get() {
                 return this._sizeMode;
             },
-            set (value) {
+            set(value) {
                 this._sizeMode = value;
                 if (value !== SizeMode.CUSTOM) {
                     this._applySpriteSize();
@@ -393,7 +399,7 @@ var Sprite = cc.Class({
         State: State,
     },
 
-    setVisible (visible) {
+    setVisible(visible) {
         this.enabled = visible;
     },
 
@@ -404,7 +410,7 @@ var Sprite = cc.Class({
      * @param state {Sprite.State} NORMAL or GRAY State.
      * @deprecated
      */
-    setState () {},
+    setState() { },
 
     /**
      * Gets the current state.
@@ -413,15 +419,15 @@ var Sprite = cc.Class({
      * @return {Sprite.State}
      * @deprecated
      */
-    getState () {},
+    getState() { },
 
-    __preload () {
+    __preload() {
         this._super();
         CC_EDITOR && this.node.on(NodeEvent.SIZE_CHANGED, this._resizedInEditor, this);
         this._applySpriteFrame();
     },
 
-    onEnable () {
+    onEnable() {
         this._super();
         this._spriteFrame && this._spriteFrame.ensureLoadTexture();
 
@@ -429,20 +435,20 @@ var Sprite = cc.Class({
         this.node.on(cc.Node.EventType.ANCHOR_CHANGED, this.setVertsDirty, this);
     },
 
-    onDisable () {
+    onDisable() {
         this._super();
-        
+
         this.node.off(cc.Node.EventType.SIZE_CHANGED, this.setVertsDirty, this);
         this.node.off(cc.Node.EventType.ANCHOR_CHANGED, this.setVertsDirty, this);
     },
 
-    _updateMaterial () {
+    _updateMaterial() {
         let texture = null;
-                
+
         if (this._spriteFrame) {
             texture = this._spriteFrame.getTexture();
         }
-        
+
         // make sure material is belong to self.
         let material = this.getMaterial(0);
         if (material) {
@@ -469,10 +475,10 @@ var Sprite = cc.Class({
         }
     },
 
-    _validateRender () {
+    _validateRender() {
         let spriteFrame = this._spriteFrame;
         if (this._materials[0] &&
-            spriteFrame && 
+            spriteFrame &&
             spriteFrame.textureLoaded()) {
             return;
         }
@@ -480,9 +486,9 @@ var Sprite = cc.Class({
         this.disableRender();
     },
 
-    _applySpriteSize () {
-        if (!this._spriteFrame || !this.isValid)  return;
-        
+    _applySpriteSize() {
+        if (!this._spriteFrame || !this.isValid) return;
+
         if (SizeMode.RAW === this._sizeMode) {
             var size = this._spriteFrame._originalSize;
             this.node.setContentSize(size);
@@ -490,12 +496,12 @@ var Sprite = cc.Class({
             var rect = this._spriteFrame._rect;
             this.node.setContentSize(rect.width, rect.height);
         }
-        
+
         this.setVertsDirty();
     },
 
-    _applySpriteFrame (oldFrame) {
-        if (!this.isValid)  return;
+    _applySpriteFrame(oldFrame) {
+        if (!this.isValid) return;
 
         let oldTexture = oldFrame && oldFrame.getTexture();
         if (oldTexture && !oldTexture.loaded) {

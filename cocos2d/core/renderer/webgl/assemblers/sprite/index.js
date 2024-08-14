@@ -2,6 +2,7 @@ import Assembler from '../../../assembler';
 import { Type, FillType } from '../../../../components/CCSprite';
 
 import Simple from "./2d/simple";
+import SimpleDepth from "./2d/simple-depth";
 import Sliced from "./2d/sliced";
 import Tiled from "./2d/tiled";
 import RadialFilled from "./2d/radial-filled";
@@ -37,12 +38,16 @@ let ctor = {
             case Type.MESH:
                 ctor = is3DNode ? Mesh3D : Mesh;
                 break;
+            case Type.SIMPLE_DEPTH:
+                ctor = this.SimpleDepth;
+                break;
         }
 
         return ctor;
     },
 
     Simple,
+    SimpleDepth,
     Sliced,
     Tiled,
     RadialFilled,

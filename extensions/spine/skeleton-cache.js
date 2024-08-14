@@ -52,6 +52,7 @@ let _finalColor32, _darkColor32;
 let _finalColor = new spine.Color(1, 1, 1, 1);
 let _darkColor = new spine.Color(1, 1, 1, 1);
 let _quadTriangles = [0, 1, 2, 2, 3, 0];
+let _offsets;
 
 //Cache all frames in an animation
 let AnimationCache = cc.Class({
@@ -214,11 +215,13 @@ let AnimationCache = cc.Class({
         _colorOffset = 0;
         _preFinalColor = null;
         _preDarkColor = null;
+        _offsets = [];
 
         this.frames[index] = this.frames[index] || {
             segments: [],
             colors: [],
             boneInfos: [],
+            offsets: null,
             vertices: null,
             uintVert: null,
             indices: null,
@@ -282,6 +285,7 @@ let AnimationCache = cc.Class({
         frame.vertices = vertices;
         frame.uintVert = uintVert;
         frame.indices = indices;
+        frame.offsets = _offsets;
     },
 
     fillVertices(skeletonColor, attachmentColor, slotColor, clipper, slot) {
@@ -390,8 +394,12 @@ let AnimationCache = cc.Class({
             }
         }
 
-        for (let slotIdx = 0, slotCount = skeleton.drawOrder.length; slotIdx < slotCount; slotIdx++) {
-            slot = skeleton.drawOrder[slotIdx];
+        let drawOrder = skeleton.drawOrder;
+
+        // console.log('------翻转---- depth: ' + skeleton.depth);
+        // drawOrder.reverse();
+        for (let slotIdx = 0, slotCount = drawOrder.length; slotIdx < slotCount; slotIdx++) {
+            slot = drawOrder[slotIdx];
 
             _vfCount = 0;
             _indexCount = 0;
@@ -504,6 +512,7 @@ let AnimationCache = cc.Class({
                 _indexOffset += _indexCount;
                 _vfOffset += _vfCount;
                 _vertexOffset = _vfOffset / _perVertexSize;
+                _offsets.push(_vfOffset);
                 _segICount += _indexCount;
                 _segVCount += _vfCount / _perVertexSize;
             }
