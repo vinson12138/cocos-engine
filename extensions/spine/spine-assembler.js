@@ -93,6 +93,8 @@ let _realtimeVertices = [];
 /** 实时渲染的顶点大小(字节)，读取skeleton时用 */
 let _realtimeSizePerVertex = 0;
 
+let DEPTH_RATE = 5e-4;
+
 function _getSlotMaterial(tex, blendMode) {
     let src, dst;
     switch (blendMode) {
@@ -174,6 +176,14 @@ function _spineColorToInt32(spineColor) {
 }
 
 export default class SpineAssembler extends Assembler {
+
+    constructor() {
+        super();
+        if (cc.sys.os == cc.sys.OS_IOS) {
+            DEPTH_RATE = 1e-6;
+        }
+        console.log('update DEPTH_RATE', DEPTH_RATE, cc.sys.os);
+    }
     updateRenderData(comp) {
         if (comp.isAnimationCached()) return;
         let skeleton = comp._skeleton;
@@ -549,7 +559,7 @@ export default class SpineAssembler extends Assembler {
 
             vertex3Buffer[dstOffset] = vertex2Array[srcOffset];         //x
             vertex3Buffer[dstOffset + 1] = vertex2Array[srcOffset + 1]; //y
-            vertex3Buffer[dstOffset + 2] = _depth - 1e-6 * slotIdx;          //z
+            vertex3Buffer[dstOffset + 2] = _depth - DEPTH_RATE * slotIdx;          //z
             vertex3Buffer[dstOffset + 3] = vertex2Array[srcOffset + 2]; //u
             vertex3Buffer[dstOffset + 4] = vertex2Array[srcOffset + 3]; //v
             vertex3Buffer[dstOffset + 5] = vertex2Array[srcOffset + 4]; //c1
@@ -636,7 +646,7 @@ export default class SpineAssembler extends Assembler {
                 for (j = 0, len = offsets.length; j < len; j++) {
                     if (srcOffset <= offsets[j]) break;
                 }
-                vbuf[dstOffset + 2] = _depth - 1e-6 * j;   //todo depth + 自己深度
+                vbuf[dstOffset + 2] = _depth - DEPTH_RATE * j;   //todo depth + 自己深度
                 vbuf[dstOffset + 3] = vertices[srcOffset + 2];
                 vbuf[dstOffset + 4] = vertices[srcOffset + 3];
                 vbuf[dstOffset + 5] = vertices[srcOffset + 4];
