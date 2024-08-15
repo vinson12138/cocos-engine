@@ -179,10 +179,9 @@ export default class SpineAssembler extends Assembler {
 
     constructor() {
         super();
-        if (cc.sys.os == cc.sys.OS_IOS) {
+        if (cc.sys.os != cc.sys.OS_ANDROID) {
             DEPTH_RATE = 1e-6;
         }
-        console.log('update DEPTH_RATE', DEPTH_RATE, cc.sys.os);
     }
     updateRenderData(comp) {
         if (comp.isAnimationCached()) return;
