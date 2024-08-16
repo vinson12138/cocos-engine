@@ -180,7 +180,6 @@ export default class SpineAssembler extends Assembler {
     constructor() {
         super();
         DEPTH_RATE = Skeleton.depthRate;
-        console.log('assembler depth rate', DEPTH_RATE);
     }
     updateRenderData(comp) {
         if (comp.isAnimationCached()) return;
