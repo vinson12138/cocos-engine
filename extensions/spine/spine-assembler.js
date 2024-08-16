@@ -93,7 +93,7 @@ let _realtimeVertices = [];
 /** 实时渲染的顶点大小(字节)，读取skeleton时用 */
 let _realtimeSizePerVertex = 0;
 
-let DEPTH_RATE = 5e-4;
+let DEPTH_RATE = 0;
 
 function _getSlotMaterial(tex, blendMode) {
     let src, dst;
@@ -179,9 +179,8 @@ export default class SpineAssembler extends Assembler {
 
     constructor() {
         super();
-        if (cc.sys.os != cc.sys.OS_ANDROID) {
-            DEPTH_RATE = 1e-6;
-        }
+        DEPTH_RATE = Skeleton.depthRate;
+        console.log('assembler depth rate', DEPTH_RATE);
     }
     updateRenderData(comp) {
         if (comp.isAnimationCached()) return;

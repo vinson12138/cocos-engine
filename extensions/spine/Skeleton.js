@@ -66,6 +66,8 @@ let AnimationCacheMode = cc.Enum({
     PRIVATE_CACHE: 2
 });
 
+
+
 function setEnumAttr(obj, propName, enumDef) {
     cc.Class.Attr.setClassAttr(obj, propName, 'type', 'Enum');
     cc.Class.Attr.setClassAttr(obj, propName, 'enumList', cc.Enum.getList(enumDef));
@@ -99,6 +101,7 @@ sp.Skeleton = cc.Class({
 
     statics: {
         AnimationCacheMode: AnimationCacheMode,
+        depthRate: 1e-6
     },
 
     properties: {
